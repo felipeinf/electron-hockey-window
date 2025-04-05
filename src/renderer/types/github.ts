@@ -3,14 +3,13 @@ export interface PullRequest {
   number: number;
   title: string;
   html_url: string;
+  user: {
+    login: string;
+  };
   created_at: string;
   updated_at: string;
   repoName: string;
   isOwn: boolean;
-  user: {
-    login: string;
-    avatar_url: string;
-  };
 }
 
 export function mapPullRequest(pr: any): PullRequest {
@@ -25,7 +24,6 @@ export function mapPullRequest(pr: any): PullRequest {
     isOwn: pr.isOwn || false,
     user: {
       login: pr.user?.login || 'unknown',
-      avatar_url: pr.user?.avatar_url || ''
     }
   };
 } 

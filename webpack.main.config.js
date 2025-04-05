@@ -1,10 +1,11 @@
+const path = require('path');
+
 module.exports = {
-  entry: './src/main/main.ts',
-  target: 'electron-main',
-  output: {
-    filename: 'index.js',
-    path: require('path').resolve(__dirname, '.webpack/main')
+  entry: {
+    main: './src/main/main.ts',
+    preload: './src/preload/preload.ts',
   },
+  target: 'electron-main',
   module: {
     rules: [
       {
@@ -16,13 +17,15 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
-    fallback: {
-      path: false,
-      fs: false,
-      crypto: false,
-      os: false,
-      util: false,
-      assert: false
-    }
+  },
+  output: {
+    filename: (pathData) => {
+      return pathData.chunk.name === 'preload' ? 'preload/preload.js' : 'main/[name].js';
+    },
+    path: path.resolve(__dirname, 'dist'),
+  },
+  node: {
+    __dirname: false,
+    __filename: false,
   },
 }; 

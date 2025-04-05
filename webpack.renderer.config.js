@@ -1,4 +1,7 @@
+const path = require('path');
+
 module.exports = {
+  entry: './src/renderer/index.tsx',
   target: 'electron-renderer',
   module: {
     rules: [
@@ -23,5 +26,9 @@ module.exports = {
       util: false,
       assert: false
     }
+  },
+  output: {
+    filename: 'hockey.js',
+    path: path.resolve(__dirname, 'dist/renderer'),
   },
 }; 
