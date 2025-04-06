@@ -1,6 +1,47 @@
 import { app, BrowserWindow, globalShortcut, ipcMain, screen, shell } from 'electron';
 import * as path from 'path';
 import Store from 'electron-store';
+import * as fs from 'fs';
+
+// Hot Reload simple y directo
+if (process.env.NODE_ENV === 'development') {
+  try {
+    // Usar el tiempo de última modificación para detectar cambios
+    let lastModified = Date.now();
+    
+    // Función para verificar cambios
+    const checkForChanges = () => {
+      try {
+        const rendererFilePath = path.join(__dirname, '../renderer/hockey.js');
+        
+        if (fs.existsSync(rendererFilePath)) {
+          const stats = fs.statSync(rendererFilePath);
+          const mtime = stats.mtimeMs;
+          
+          if (mtime > lastModified && hockeyWindow && !hockeyWindow.isDestroyed()) {
+            console.log('Detectado cambio en el renderer, recargando...');
+            lastModified = mtime;
+            hockeyWindow.webContents.reloadIgnoringCache();
+          }
+        }
+      } catch (err) {
+        console.error('Error verificando cambios:', err);
+      }
+    };
+    
+    // Verificar cambios cada 1 segundo
+    const watchInterval = setInterval(checkForChanges, 1000);
+    
+    // Limpiar el intervalo cuando la aplicación se cierra
+    app.on('will-quit', () => {
+      clearInterval(watchInterval);
+    });
+    
+    console.log('Hot reload activado (verificación cada 1s)');
+  } catch (err) {
+    console.log('Error al configurar hot reload:', err);
+  }
+}
 
 // Configuración de electron-store
 const store = new Store({
