@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, screen, shell } from 'electron';
 import * as path from 'path';
 import Store from 'electron-store';
 
@@ -12,9 +12,57 @@ const store = new Store({
 
 let hockeyWindow: BrowserWindow | null = null;
 
+// Función para cerrar todas las ventanas duplicadas
+const closeAllDuplicateWindows = () => {
+  const allWindows = BrowserWindow.getAllWindows();
+  // Filtrar ventanas que tengan características similares a la ventana hockey
+  const hockeyWindows = allWindows.filter(win => 
+    win.getBackgroundColor() === '#00000000' && 
+    !win.isDestroyed() && 
+    win !== hockeyWindow
+  );
+  
+  console.log(`Encontradas ${hockeyWindows.length} ventanas duplicadas para cerrar`);
+  
+  // Cerrar ventanas duplicadas
+  hockeyWindows.forEach(win => {
+    try {
+      win.destroy();
+    } catch (error) {
+      console.error('Error al cerrar ventana duplicada:', error);
+    }
+  });
+};
+
+// Función mejorada para ocultar la ventana
+const hideHockeyWindow = () => {
+  if (!hockeyWindow || hockeyWindow.isDestroyed()) return;
+  
+  console.log('Destruyendo ventana hockey en lugar de ocultarla');
+  
+  // Guardar la posición actual de la ventana
+  const bounds = hockeyWindow.getBounds();
+  store.set('windowBounds', bounds);
+  
+  // En lugar de ocultar, destruimos completamente la ventana
+  try {
+    hockeyWindow.destroy();
+    hockeyWindow = null;
+  } catch (error) {
+    console.error('Error al destruir ventana:', error);
+  }
+  
+  // Cerrar todas las ventanas que puedan quedar
+  closeAllDuplicateWindows();
+};
+
 const createHockeyWindow = () => {
-  if (hockeyWindow) {
+  // Cerrar ventanas duplicadas primero
+  closeAllDuplicateWindows();
+  
+  if (hockeyWindow && !hockeyWindow.isDestroyed()) {
     hockeyWindow.show();
+    hockeyWindow.focus();
     return;
   }
 
@@ -28,6 +76,16 @@ const createHockeyWindow = () => {
   const preloadPath = path.join(__dirname, '../preload/preload.js');
   console.log('Ruta del preload:', preloadPath);
   
+  // Cerrar la ventana existente si por alguna razón todavía existe
+  if (hockeyWindow) {
+    try {
+      hockeyWindow.destroy();
+    } catch (error) {
+      console.error('Error al cerrar ventana anterior:', error);
+    }
+    hockeyWindow = null;
+  }
+  
   hockeyWindow = new BrowserWindow({
     width: 400,
     height: 600,
@@ -40,7 +98,7 @@ const createHockeyWindow = () => {
     hasShadow: true,
     visualEffectState: 'active',
     vibrancy: 'under-window',
-    backgroundColor: '#00000000',
+    backgroundColor: '#000000',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -52,11 +110,31 @@ const createHockeyWindow = () => {
     trafficLightPosition: { x: 10, y: 10 }
   });
 
+  // Forzar fondo opaco para evitar ventanas fantasma
+  hockeyWindow.setBackgroundColor('#000000');
+
   // Mostrar DevTools siempre para depuración
-  hockeyWindow.webContents.openDevTools({ mode: 'detach' });
+  // hockeyWindow.webContents.openDevTools({ mode: 'detach' });
 
   // Asegurarse de que la ventana sea movible
   hockeyWindow.setMovable(true);
+
+  // Limpiar ventanas fantasma al mostrar
+  hockeyWindow.on('show', () => {
+    console.log('Ventana hockey mostrada');
+    // Eliminar ventanas fantasma
+    closeAllDuplicateWindows();
+  });
+
+  // Limpiar ventanas fantasma al redimensionar
+  hockeyWindow.on('resize', () => {
+    closeAllDuplicateWindows();
+  });
+
+  // Manejar el evento ready-to-show
+  hockeyWindow.once('ready-to-show', () => {
+    closeAllDuplicateWindows();
+  });
 
   // Cargar la última posición guardada
   const windowBounds = store.get('windowBounds');
@@ -93,24 +171,105 @@ const createHockeyWindow = () => {
 
   // Ocultar en lugar de cerrar
   hockeyWindow.on('close', (event) => {
-    event.preventDefault();
-    hockeyWindow?.hide();
+    console.log('Evento close en hockeyWindow');
+    if (hockeyWindow && !hockeyWindow.isDestroyed()) {
+      event.preventDefault();
+      hideHockeyWindow();
+    }
   });
+
+  // Añadir log para verificar si la ventana se cierra
+  hockeyWindow.on('closed', () => {
+    console.log('Ventana hockey cerrada completamente');
+    hockeyWindow = null;
+  });
+
+  // Manejar ocultar ventana
+  hockeyWindow.on('hide', () => {
+    console.log('Ventana hockey ocultada');
+    // Cerrar ventanas fantasma
+    closeAllDuplicateWindows();
+  });
+
+  // Manejar evento hide para macOS
+  if (process.platform === 'darwin') {
+    app.on('browser-window-blur', () => {
+      if (hockeyWindow && !hockeyWindow.isDestroyed() && hockeyWindow.isVisible()) {
+        // No hacer nada especial por ahora, solo loggear
+        console.log('Ventana perdió el foco');
+      }
+    });
+    
+    // Mantener referencia a las ventanas
+    const windowReferences: BrowserWindow[] = [];
+    
+    app.on('browser-window-created', (_, window) => {
+      windowReferences.push(window);
+      window.on('closed', () => {
+        const index = windowReferences.indexOf(window);
+        if (index > -1) {
+          windowReferences.splice(index, 1);
+        }
+      });
+    });
+    
+    // Función para cerrar todas las ventanas fantasma
+    const closeGhostWindows = () => {
+      windowReferences.forEach(win => {
+        if (win !== hockeyWindow && !win.isDestroyed() && win.getParentWindow() === null) {
+          try {
+            win.destroy();
+          } catch (e) {
+            console.error('Error al cerrar ventana fantasma:', e);
+          }
+        }
+      });
+    };
+    
+    // Cerrar ventanas fantasma periódicamente
+    setInterval(closeGhostWindows, 5000);
+  }
 };
 
-// IPC handlers
-ipcMain.handle('get-github-token', () => {
-  console.log('Obteniendo token de GitHub');
-  const token = store.get('github-token');
-  console.log('Token obtenido:', token ? 'Token existe' : 'No hay token');
-  return token;
+// IPC handlers para comunicación con el renderer
+ipcMain.handle('get-github-token', (event) => {
+  console.log('Procesando solicitud get-github-token desde:', event.sender.getURL());
+  try {
+    const token = store.get('github-token') as string;
+    if (!token) {
+      console.log('Token no encontrado');
+      return '';
+    }
+    console.log('Token recuperado: Existe (longitud: ' + token.length + ')');
+    return token;
+  } catch (error) {
+    console.error('Error al obtener el token:', error);
+    return '';
+  }
 });
 
-ipcMain.handle('set-github-token', (_, token: string) => {
-  console.log('Guardando token de GitHub');
-  store.set('github-token', token);
-  console.log('Token guardado');
-  return true;
+ipcMain.handle('set-github-token', (_, token) => {
+  try {
+    console.log('Guardando token de longitud:', token ? token.length : 0);
+    store.set('github-token', token);
+    console.log('Token guardado correctamente');
+    return true;
+  } catch (error) {
+    console.error('Error al guardar el token:', error);
+    return false;
+  }
+});
+
+ipcMain.handle('open-external', async (_, url) => {
+  try {
+    console.log('Abriendo URL externa:', url);
+    await shell.openExternal(url);
+    console.log('URL abierta correctamente');
+    return true;
+  } catch (error) {
+    console.error('Error al abrir URL externa:', error);
+    return false;
+  }
 });
 
 app.whenReady().then(() => {
@@ -118,14 +277,41 @@ app.whenReady().then(() => {
 
   // Registrar atajo global (Command+Shift+H en macOS, Ctrl+Shift+H en Windows)
   globalShortcut.register('CommandOrControl+Shift+H', () => {
-    if (hockeyWindow?.isVisible()) {
-      hockeyWindow.hide();
+    // Primero cerrar ventanas duplicadas
+    closeAllDuplicateWindows();
+    
+    if (hockeyWindow && !hockeyWindow.isDestroyed()) {
+      if (hockeyWindow.isVisible()) {
+        hideHockeyWindow();
+      } else {
+        // Este caso no debería ocurrir con la nueva implementación
+        // pero por si acaso lo manejamos
+        hockeyWindow.show();
+        hockeyWindow.focus();
+      }
     } else {
       createHockeyWindow();
     }
   });
 });
 
-app.on('window-all-closed', (e: Electron.Event) => {
-  e.preventDefault(); // Prevenir que la aplicación se cierre
+// Manejar evento de cierre de aplicación
+app.on('window-all-closed', () => {
+  // No cerrar en macOS a menos que el usuario lo solicite explícitamente
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+// Manejar activación (macOS)
+app.on('activate', () => {
+  // Primero cerrar ventanas duplicadas
+  closeAllDuplicateWindows();
+  
+  if (!hockeyWindow || hockeyWindow.isDestroyed()) {
+    createHockeyWindow();
+  } else if (!hockeyWindow.isVisible()) {
+    hockeyWindow.show();
+    hockeyWindow.focus();
+  }
 }); 

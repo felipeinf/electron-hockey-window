@@ -1,8 +1,11 @@
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: './src/renderer/index.tsx',
+  entry: './src/renderer/hockey-index.tsx',
   target: 'electron-renderer',
+  mode: 'development',
   module: {
     rules: [
       {
@@ -31,4 +34,11 @@ module.exports = {
     filename: 'hockey.js',
     path: path.resolve(__dirname, 'dist/renderer'),
   },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './src/renderer/hockey.html',
+      filename: 'hockey.html',
+      chunks: ['main']
+    }),
+  ],
 }; 

@@ -5,12 +5,11 @@
   "main": "dist/main/main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "npm run build && npm run start",
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "webpack --config webpack.main.config.js",
     "build:renderer": "webpack --config webpack.renderer.config.js",
-    "copy-html": "mkdir -p dist/renderer && cp src/renderer/*.html dist/renderer/",
-    "dev": "npm run build && npm run start",
-    "watch": "webpack --watch --config webpack.renderer.config.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -32,8 +31,10 @@
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",
     "@types/webpack-env": "^1.18.4",
+    "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^6.8.1",
     "electron": "^28.0.0",
+    "html-webpack-plugin": "^5.6.3",
     "style-loader": "^3.3.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.0.0",
@@ -63,27 +64,6 @@
         {
           "name": "@electron-forge/maker-rpm",
           "config": {}
-        }
-      ],
-      "plugins": [
-        {
-          "name": "@electron-forge/plugin-webpack",
-          "config": {
-            "mainConfig": "./webpack.main.config.js",
-            "renderer": {
-              "config": "./webpack.renderer.config.js",
-              "entryPoints": [
-                {
-                  "html": "./src/renderer/index.html",
-                  "js": "./src/renderer/index.tsx",
-                  "name": "main_window",
-                  "preload": {
-                    "js": "./src/preload/preload.ts"
-                  }
-                }
-              ]
-            }
-          }
         }
       ]
     }
