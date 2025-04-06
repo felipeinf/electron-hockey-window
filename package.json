@@ -4,15 +4,17 @@
   "description": "GitHub PR reviewer with hockey window",
   "main": "dist/main/main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "npm run build && npm run start",
+    "start": "electron dist/internal/electron/main.js",
+    "dev": "cross-env NODE_ENV=development concurrently \"npm run build:watch\" \"npm run start:dev\"",
+    "start:dev": "cross-env NODE_ENV=development electron dist/internal/electron/main.js",
     "dev:watch": "cross-env NODE_ENV=development concurrently \"npm run build:main:watch\" \"npm run build:renderer:watch\" \"electron .\"",
-    "build": "npm run build:main && npm run build:renderer",
+    "build": "tsc",
     "build:main": "webpack --config webpack.main.config.js",
     "build:renderer": "webpack --config webpack.renderer.config.js",
     "build:main:watch": "webpack --config webpack.main.config.js --watch",
     "build:renderer:watch": "webpack --config webpack.renderer.config.js --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "rm -rf dist"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +23,7 @@
     "@emotion/styled": "^11.11.0",
     "@nextui-org/react": "^2.6.11",
     "@octokit/rest": "^19.0.7",
+    "electron-log": "^5.3.3",
     "electron-store": "^8.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
