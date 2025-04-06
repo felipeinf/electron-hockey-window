@@ -44,14 +44,19 @@ const SvgIcon = ({ svgContent, ...props }: SvgIconProps) => (
 );
 
 const AppContainer = styled.div`
-  background: rgba(30, 30, 30, 0.9);
-  color: white;
-  height: 100vh;
   width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: rgba(26, 26, 26);
+  color: white;
+  position: relative;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 `;
 
 const TitleBar = styled.div`
@@ -67,6 +72,8 @@ const TitleBar = styled.div`
   align-items: center;
   -webkit-app-region: drag;
   z-index: 100;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 `;
 
 const ContentArea = styled.div`
@@ -91,6 +98,8 @@ const FooterBar = styled.div`
   color: rgba(255, 255, 255, 0.6);
   user-select: none;
   z-index: 10;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 `;
 
 const TokenForm = styled.form`
@@ -101,6 +110,8 @@ const TokenForm = styled.form`
   padding: 16px;
   background: rgba(40, 40, 40, 0.5);
   border-radius: 6px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 `;
 
 const TokenInput = styled.input`
@@ -144,6 +155,14 @@ const PRCard = styled.div`
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 8px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(50, 50, 50, 0.7);
+    transform: translateY(-2px);
+  }
   
   h3 {
     margin: 0 0 8px 0;
@@ -471,8 +490,8 @@ const Hockey: React.FC = () => {
   };
 
   const handleSettingsClick = () => {
-    console.log('Abriendo configuración...');
-    setShowTokenForm(true);
+    console.log('Alternando configuración...');
+    setShowTokenForm(!showTokenForm);
   };
   
   const handleDeleteToken = async () => {
@@ -529,13 +548,12 @@ const Hockey: React.FC = () => {
   // Función para mostrar formulario de token
   const mostrarFormulario = () => {
     console.log('Ejecutando función para mostrar formulario');
-    setShowTokenForm(true);
+    handleSettingsClick();
   };
 
   return (
     <AppContainer style={{ 
-      visibility: appReady ? 'visible' : 'hidden',
-      background: '#000'
+      background: 'rgba(26, 26, 26, 0.8)'
     }}>
       <TitleBar>
         <h1 style={{ 
@@ -621,7 +639,7 @@ const Hockey: React.FC = () => {
               </TokenForm>
             ) : (
               <>
-                <h2>Pull Requests</h2>
+                <h2>Pull Requestss</h2>
                 
                 {loading ? (
                   <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -675,7 +693,6 @@ const Hockey: React.FC = () => {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19.14 12.94C19.18 12.64 19.2 12.33 19.2 12C19.2 11.68 19.18 11.36 19.13 11.06L21.16 9.48C21.2475 9.40789 21.3073 9.30769 21.3292 9.19646C21.351 9.08523 21.3337 8.96986 21.28 8.87L19.36 5.55C19.3032 5.44985 19.2129 5.37291 19.105 5.33268C18.9972 5.29245 18.8785 5.2915 18.77 5.33L16.38 6.29C15.88 5.91 15.35 5.59 14.76 5.35L14.4 2.81C14.3823 2.69553 14.3241 2.5912 14.2361 2.51597C14.148 2.44074 14.0359 2.39959 13.92 2.4H10.08C9.84003 2.4 9.65002 2.57 9.61002 2.81L9.25003 5.35C8.66003 5.59 8.12003 5.92 7.63003 6.29L5.24003 5.33C5.02003 5.25 4.77003 5.33 4.65003 5.55L2.74003 8.87C2.62003 9.08 2.66003 9.34 2.86003 9.48L4.89003 11.06C4.84003 11.36 4.80003 11.69 4.80003 12C4.80003 12.31 4.82003 12.64 4.87003 12.94L2.84003 14.52C2.75255 14.5921 2.69278 14.6923 2.6709 14.8035C2.64902 14.9148 2.66638 15.0301 2.72003 15.13L4.64003 18.45C4.76003 18.67 5.01003 18.74 5.23003 18.67L7.62003 17.71C8.12003 18.09 8.65003 18.41 9.24003 18.65L9.60003 21.19C9.65003 21.43 9.84003 21.6 10.08 21.6H13.92C14.16 21.6 14.36 21.43 14.39 21.19L14.75 18.65C15.34 18.41 15.88 18.09 16.37 17.71L18.76 18.67C18.98 18.75 19.23 18.67 19.35 18.45L21.27 15.13C21.39 14.91 21.34 14.66 21.15 14.52L19.14 12.94ZM12 15.6C10.02 15.6 8.40002 13.98 8.40002 12C8.40002 10.02 10.02 8.4 12 8.4C13.98 8.4 15.6 10.02 15.6 12C15.6 13.98 13.98 15.6 12 15.6Z" fill="white"/>
           </svg>
-
         </button>
         <span>Made with ⚡ by Codefire</span>
       </FooterBar>

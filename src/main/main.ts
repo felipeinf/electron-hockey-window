@@ -137,9 +137,7 @@ const createHockeyWindow = () => {
     alwaysOnTop: true,
     skipTaskbar: false,
     hasShadow: true,
-    visualEffectState: 'active',
-    vibrancy: 'under-window',
-    backgroundColor: '#000000',
+    backgroundColor: '#00000000',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -151,12 +149,9 @@ const createHockeyWindow = () => {
     trafficLightPosition: { x: 10, y: 10 }
   });
 
-  // Forzar fondo opaco para evitar ventanas fantasma
-  hockeyWindow.setBackgroundColor('#000000');
-
-  // Mostrar DevTools siempre para depuración
-  // hockeyWindow.webContents.openDevTools({ mode: 'detach' });
-
+  // Asegurarse de que la ventana sea transparente de verdad
+  hockeyWindow.setBackgroundColor('#00000000');
+  
   // Asegurarse de que la ventana sea movible
   hockeyWindow.setMovable(true);
 
@@ -240,35 +235,6 @@ const createHockeyWindow = () => {
         console.log('Ventana perdió el foco');
       }
     });
-    
-    // Mantener referencia a las ventanas
-    const windowReferences: BrowserWindow[] = [];
-    
-    app.on('browser-window-created', (_, window) => {
-      windowReferences.push(window);
-      window.on('closed', () => {
-        const index = windowReferences.indexOf(window);
-        if (index > -1) {
-          windowReferences.splice(index, 1);
-        }
-      });
-    });
-    
-    // Función para cerrar todas las ventanas fantasma
-    const closeGhostWindows = () => {
-      windowReferences.forEach(win => {
-        if (win !== hockeyWindow && !win.isDestroyed() && win.getParentWindow() === null) {
-          try {
-            win.destroy();
-          } catch (e) {
-            console.error('Error al cerrar ventana fantasma:', e);
-          }
-        }
-      });
-    };
-    
-    // Cerrar ventanas fantasma periódicamente
-    setInterval(closeGhostWindows, 5000);
   }
 };
 
