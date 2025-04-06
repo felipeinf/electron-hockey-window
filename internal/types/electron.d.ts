@@ -1,6 +1,6 @@
 export interface ElectronAPI {
   getGithubToken: () => Promise<string>;
-  setGithubToken: (token: string) => Promise<void>;
+  setGithubToken: (token: string) => Promise<boolean>;
 }
 
 declare global {

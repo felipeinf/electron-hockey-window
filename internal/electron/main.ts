@@ -1,8 +1,17 @@
 import { app, session } from 'electron';
 import path from 'path';
-import { createHockeyWindow } from './hockey-window';
+import { createHockeyWindow } from '../window/hockey-window';
 import { initializeApp } from './electron-config';
 import * as log from 'electron-log';
+
+// Declaración global para la ventana
+declare global {
+  namespace NodeJS {
+    interface Global {
+      hockeyWindow: any;
+    }
+  }
+}
 
 // Configuración de registro
 log.initialize({ preload: true });
@@ -24,7 +33,7 @@ if (!gotTheLock) {
   // Manejo de segunda instancia
   app.on('second-instance', () => {
     log.info('Segunda instancia detectada, enfocando la ventana principal');
-    const hockeyWindow = global.hockeyWindow;
+    const hockeyWindow = (global as any).hockeyWindow;
     if (hockeyWindow) {
       if (hockeyWindow.isMinimized()) hockeyWindow.restore();
       hockeyWindow.focus();
@@ -56,7 +65,9 @@ app.whenReady().then(async () => {
     }
     
     // Inicializar IPC
+    log.info('Inicializando handlers IPC...');
     initializeApp();
+    log.info('Handlers IPC inicializados correctamente, incluyendo github:get-token y github:set-token');
     
     // Crear ventana principal
     await createHockeyWindow();
@@ -64,7 +75,7 @@ app.whenReady().then(async () => {
     // En macOS, recrear la ventana cuando se hace clic en el icono del dock
     app.on('activate', async () => {
       log.info('Activación de la aplicación');
-      if (!global.hockeyWindow) {
+      if (!(global as any).hockeyWindow) {
         await createHockeyWindow();
       }
     });

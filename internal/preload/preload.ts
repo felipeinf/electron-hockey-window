@@ -39,11 +39,25 @@ const githubAPI = {
   // Método específico para token de GitHub
   getGithubToken: async () => {
     console.log('Obteniendo token de GitHub usando API específica');
-    return await ipcRenderer.invoke('storage:get', 'github-token');
+    try {
+      const result = await ipcRenderer.invoke('github:get-token');
+      console.log('Token obtenido:', result ? 'Valor no vacío' : 'Valor vacío');
+      return result;
+    } catch (error) {
+      console.error('Error al obtener token de GitHub:', error);
+      return '';
+    }
   },
   setGithubToken: async (token: string) => {
-    console.log('Estableciendo token de GitHub usando API específica');
-    return await ipcRenderer.invoke('storage:set', 'github-token', token);
+    console.log('Estableciendo token de GitHub usando API específica, token:', token ? 'Valor no vacío' : 'Valor vacío');
+    try {
+      const result = await ipcRenderer.invoke('github:set-token', token);
+      console.log('Resultado de guardar token:', result);
+      return result;
+    } catch (error) {
+      console.error('Error al establecer token de GitHub:', error);
+      return false;
+    }
   }
 };
 

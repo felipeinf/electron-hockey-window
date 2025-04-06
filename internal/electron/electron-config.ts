@@ -1,11 +1,20 @@
 import { BrowserWindow, app, globalShortcut, ipcMain, shell } from 'electron';
 import * as path from 'path';
-import Store from 'electron-store';
+import ElectronStore from 'electron-store';
 import * as fs from 'fs';
 
-// Configuración de electron-store genérica
-export const store = new Store({
-  name: 'hockey-config'
+// Crear store global
+export const store = new ElectronStore({
+  name: 'hockey-config',
+  clearInvalidConfig: true,
+  defaults: {
+    windowBounds: {
+      width: 400,
+      height: 600,
+      x: 0,
+      y: 0
+    }
+  }
 });
 
 // Variable global para la ventana principal
@@ -76,8 +85,39 @@ ipcMain.handle('storage:set', (_, key, value) => {
   }
 });
 
+// Handlers específicos para GitHub
+ipcMain.handle('github:get-token', async () => {
+  try {
+    console.log('Recuperando token de GitHub');
+    const token = store.get('githubToken');
+    console.log('Token recuperado correctamente:', token ? 'Sí (existe)' : 'No (vacío)');
+    return token || '';
+  } catch (error) {
+    console.error('Error al recuperar token de GitHub:', error);
+    return '';
+  }
+});
+
+ipcMain.handle('github:set-token', async (_, token) => {
+  try {
+    console.log('Guardando token de GitHub:', token ? 'Valor no vacío' : 'Valor vacío');
+    store.set('githubToken', token);
+    console.log('Token guardado correctamente');
+    return true;
+  } catch (error) {
+    console.error('Error al guardar token de GitHub:', error);
+    return false;
+  }
+});
+
 // Función para inicializar la aplicación Electron
 export function initializeApp() {
+  // Log para verificar que los handlers están registrados
+  console.log('Verificando handlers IPC registrados...');
+  console.log('Handler github:get-token registrado:', ipcMain.eventNames().includes('github:get-token'));
+  console.log('Handler github:set-token registrado:', ipcMain.eventNames().includes('github:set-token'));
+  console.log('Todos los handlers IPC:', ipcMain.eventNames());
+  
   // Hot Reload simple y directo para desarrollo
   if (process.env.NODE_ENV === 'development') {
     try {

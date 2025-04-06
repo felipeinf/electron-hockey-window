@@ -73,11 +73,39 @@ export const createHockeyWindow = () => {
   console.log('Creando ventana Hockey');
   console.log('Resolución de pantalla:', width, 'x', height);
   
-  const projectRoot = path.resolve(__dirname, '../..');
+  // Detectar rutas dinámicamente
+  const isPackaged = process.env.NODE_ENV === 'production';
+  
+  // Encontrar la ruta correcta para el proyecto
+  let projectRoot = '';
+  if (isPackaged) {
+    projectRoot = path.resolve(__dirname, '../..');
+  } else {
+    projectRoot = process.cwd();
+  }
+  
   console.log('Raíz del proyecto:', projectRoot);
   
-  const preloadPath = path.resolve(projectRoot, 'dist', 'preload.js');
+  // Encontrar preload.js
+  const distFolder = path.join(projectRoot, 'dist');
+  let preloadPath = path.join(distFolder, 'preload.js');
   console.log('Ruta del preload:', preloadPath);
+  
+  // Verificar si el archivo preload existe
+  const fs = require('fs');
+  if (fs.existsSync(preloadPath)) {
+    console.log('El archivo preload.js existe en:', preloadPath);
+  } else {
+    console.error('ERROR: No se encontró el archivo preload.js en:', preloadPath);
+    // Intentar buscar en ubicaciones alternativas
+    const altPreloadPath = path.resolve(process.cwd(), 'dist', 'preload.js');
+    console.log('Intentando ruta alternativa para preload:', altPreloadPath);
+    if (fs.existsSync(altPreloadPath)) {
+      console.log('Preload encontrado en ruta alternativa');
+      // Usar la ruta alternativa
+      preloadPath = altPreloadPath;
+    }
+  }
   
   // Cerrar la ventana existente si por alguna razón todavía existe
   if (currentHockeyWindow) {
@@ -173,8 +201,25 @@ export const createHockeyWindow = () => {
   }
 
   console.log('__dirname:', __dirname);
-  const indexPath = path.resolve(projectRoot, 'dist', 'renderer', 'hockey.html');
-  console.log('Ruta absoluta a dist:', indexPath);
+  
+  // Encontrar archivo HTML
+  const indexPath = path.join(distFolder, 'app', 'hockey.html');
+  console.log('Ruta absoluta del HTML:', indexPath);
+  
+  // Verificar si el archivo existe
+  if (fs.existsSync(indexPath)) {
+    console.log('El archivo HTML existe');
+  } else {
+    console.error('ADVERTENCIA: El archivo HTML no existe en', indexPath);
+    // Intentar buscar en otras ubicaciones
+    const altPath = path.resolve(process.cwd(), 'dist', 'app', 'hockey.html');
+    console.log('Intentando ruta alternativa:', altPath);
+    if (fs.existsSync(altPath)) {
+      console.log('HTML encontrado en ruta alternativa');
+      newWindow.loadFile(altPath);
+      return;
+    }
+  }
   
   console.log('Cargando archivo HTML:', indexPath);
   newWindow.loadFile(indexPath);

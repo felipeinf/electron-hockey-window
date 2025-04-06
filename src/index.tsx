@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Hockey from './hockey';
+import Hockey from './app/hockey';
 
 console.log('Iniciando HockeyPR... versión simplificada');
 
