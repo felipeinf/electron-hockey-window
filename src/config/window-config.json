@@ -1,8 +1,14 @@
 {
-  "width": 800,
-  "height": 600,
   "useCustomPosition": false,
   "x": 0,
   "y": 0,
-  "backgroundColor": "#FFFFFF"
+  "backgroundColor": "#121212",
+  "dev": {
+    "width": 1200,
+    "height": 600
+  },
+  "prod": {
+    "width": 400,
+    "height": 600
+  }
 } 
