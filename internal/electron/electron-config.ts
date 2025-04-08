@@ -3,7 +3,7 @@ import * as path from 'path';
 import ElectronStore from 'electron-store';
 import * as fs from 'fs';
 
-// Crear store global
+// Configuración de electron-store genérica
 export const store = new ElectronStore({
   name: 'hockey-config',
   clearInvalidConfig: true,
@@ -17,19 +17,20 @@ export const store = new ElectronStore({
   }
 });
 
+// Control de ventanas
 // Variable global para la ventana principal
 export let hockeyWindow: BrowserWindow | null = null;
 
-// IPC handlers básicos para la ventana
+// Handlers para control de ventana
 ipcMain.handle('window:close', () => {
   try {
-    console.log('Cerrando ventana desde IPC');
-    if (hockeyWindow && !hockeyWindow.isDestroyed()) {
-      // Importamos dinámicamente para evitar dependencias circulares
-      const { hideHockeyWindow } = require('../window/hockey-window');
-      hideHockeyWindow();
+    const win = hockeyWindow || BrowserWindow.getFocusedWindow();
+    if (win && !win.isDestroyed()) {
+      console.log('Cerrando ventana');
+      win.close();
+      return true;
     }
-    return true;
+    return false;
   } catch (error) {
     console.error('Error al cerrar ventana:', error);
     return false;
@@ -38,23 +39,24 @@ ipcMain.handle('window:close', () => {
 
 ipcMain.handle('window:minimize', () => {
   try {
-    console.log('Minimizando ventana desde IPC');
-    if (hockeyWindow && !hockeyWindow.isDestroyed()) {
-      hockeyWindow.minimize();
+    const win = hockeyWindow || BrowserWindow.getFocusedWindow();
+    if (win && !win.isDestroyed()) {
+      console.log('Minimizando ventana');
+      win.minimize();
+      return true;
     }
-    return true;
+    return false;
   } catch (error) {
     console.error('Error al minimizar ventana:', error);
     return false;
   }
 });
 
-// Handler genérico para abrir URLs
+// Handler para abrir URLs externas
 ipcMain.handle('system:open-external', async (_, url) => {
   try {
     console.log('Abriendo URL externa:', url);
     await shell.openExternal(url);
-    console.log('URL abierta correctamente');
     return true;
   } catch (error) {
     console.error('Error al abrir URL externa:', error);
@@ -65,9 +67,8 @@ ipcMain.handle('system:open-external', async (_, url) => {
 // Handlers genéricos para almacenamiento
 ipcMain.handle('storage:get', (_, key) => {
   try {
-    console.log(`Recuperando valor para clave: ${key}`);
-    const value = store.get(key);
-    return value;
+    console.log(`Obteniendo valor para clave: ${key}`);
+    return store.get(key);
   } catch (error) {
     console.error(`Error al obtener valor para clave ${key}:`, error);
     return null;
@@ -85,37 +86,10 @@ ipcMain.handle('storage:set', (_, key, value) => {
   }
 });
 
-// Handlers específicos para GitHub
-ipcMain.handle('github:get-token', async () => {
-  try {
-    console.log('Recuperando token de GitHub');
-    const token = store.get('githubToken');
-    console.log('Token recuperado correctamente:', token ? 'Sí (existe)' : 'No (vacío)');
-    return token || '';
-  } catch (error) {
-    console.error('Error al recuperar token de GitHub:', error);
-    return '';
-  }
-});
-
-ipcMain.handle('github:set-token', async (_, token) => {
-  try {
-    console.log('Guardando token de GitHub:', token ? 'Valor no vacío' : 'Valor vacío');
-    store.set('githubToken', token);
-    console.log('Token guardado correctamente');
-    return true;
-  } catch (error) {
-    console.error('Error al guardar token de GitHub:', error);
-    return false;
-  }
-});
-
 // Función para inicializar la aplicación Electron
 export function initializeApp() {
   // Log para verificar que los handlers están registrados
   console.log('Verificando handlers IPC registrados...');
-  console.log('Handler github:get-token registrado:', ipcMain.eventNames().includes('github:get-token'));
-  console.log('Handler github:set-token registrado:', ipcMain.eventNames().includes('github:set-token'));
   console.log('Todos los handlers IPC:', ipcMain.eventNames());
   
   // Hot Reload simple y directo para desarrollo

@@ -1,5 +1,6 @@
 import { BrowserWindow, screen } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 import { store } from '../electron/electron-config';
 
 // Variable para acceder a la ventana de forma segura
@@ -73,6 +74,36 @@ export const createHockeyWindow = () => {
   console.log('Creando ventana Hockey');
   console.log('Resolución de pantalla:', width, 'x', height);
   
+  // Configuración según entorno (desarrollo vs producción)
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  console.log(`MODO DE EJECUCIÓN: ${isDev ? 'DESARROLLO' : 'PRODUCCIÓN'}`);
+  console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+  
+  // CONFIGURACIÓN DE DIMENSIONES SEGÚN ENTORNO
+  // Modo producción usa 400x600, modo desarrollo usa 1200x600
+  const windowWidth = isDev ? 1200 : 400;
+  const windowHeight = 600;
+  
+  console.log(`Dimensiones seleccionadas: ${windowWidth}x${windowHeight}`);
+  
+  // Cargar configuración adicional en dev si existe
+  if (isDev) {
+    try {
+      const configPath = path.resolve(__dirname, '../../src/config/window-config.json');
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (config.dev && config.dev.width && config.dev.height) {
+          console.log(`Configuración DEV: ${config.dev.width}x${config.dev.height}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar configuración dev:', error);
+    }
+  } else {
+    console.log(`Configuración PROD: ${windowWidth}x${windowHeight}`);
+  }
+  
   // Detectar rutas dinámicamente
   const isPackaged = process.env.NODE_ENV === 'production';
   
@@ -92,7 +123,6 @@ export const createHockeyWindow = () => {
   console.log('Ruta del preload:', preloadPath);
   
   // Verificar si el archivo preload existe
-  const fs = require('fs');
   if (fs.existsSync(preloadPath)) {
     console.log('El archivo preload.js existe en:', preloadPath);
   } else {
@@ -116,28 +146,12 @@ export const createHockeyWindow = () => {
     }
   }
   
-  // Cargar configuración personalizable desde config.json
-  let windowConfig;
-  try {
-    windowConfig = require('../../src/config/window-config.json');
-  } catch (error) {
-    console.warn('No se pudo cargar la configuración de ventana personalizada:', error);
-    // Configuración predeterminada
-    windowConfig = {
-      width: 400,
-      height: 600,
-      useCustomPosition: false,
-      x: 0,
-      y: 0
-    };
-  }
-  
-  // Crear la ventana con las opciones configurables
+  // Crear la ventana con el tamaño de la configuración
   const newWindow = new BrowserWindow({
-    width: windowConfig.width || 400,
-    height: windowConfig.height || 600,
-    x: windowConfig.useCustomPosition ? windowConfig.x : Math.floor(width / 2 - (windowConfig.width || 400) / 2),
-    y: windowConfig.useCustomPosition ? windowConfig.y : Math.floor(height / 2 - (windowConfig.height || 600) / 2),
+    width: isDev ? 1200 : 400, // Ancho según entorno
+    height: 600, // Alto fijo
+    x: Math.floor(width / 2 - (isDev ? 1200 : 400) / 2),
+    y: Math.floor(height / 2 - 600 / 2),
     frame: process.platform === 'darwin',
     transparent: true,
     alwaysOnTop: true,
@@ -151,9 +165,20 @@ export const createHockeyWindow = () => {
       devTools: true,
       sandbox: false
     },
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
-    trafficLightPosition: { x: 10, y: 10 }
+    titleBarStyle: process.platform === 'darwin' ? 'hidden' : 'hidden',
+    trafficLightPosition: { x: -100, y: -100 }, // Mover los controles fuera de la vista
+    titleBarOverlay: false
   });
+
+  // EN PRODUCCIÓN FORZAR DIMENSIONES CON RETRASO
+  if (!isDev) {
+    setTimeout(() => {
+      console.log('⛔ CONFIRMANDO DIMENSIONES EN PRODUCCIÓN');
+      newWindow.setSize(400, 600);
+      const size = newWindow.getSize();
+      console.log(`⛔ DIMENSIONES TRAS SETSIZE: ${size[0]}x${size[1]}`);
+    }, 200);
+  }
 
   // Actualizar la referencia en el módulo electron-config.ts
   require('../electron/electron-config').hockeyWindow = newWindow;
@@ -179,12 +204,25 @@ export const createHockeyWindow = () => {
   // Manejar el evento ready-to-show
   newWindow.once('ready-to-show', () => {
     closeAllDuplicateWindows();
+    
+    // FORZAR TAMAÑO NUEVAMENTE EN READY-TO-SHOW EN PRODUCCIÓN
+    if (!isDev) {
+      newWindow.setSize(400, 600);
+      const size = newWindow.getSize();
+      console.log(`⛔ DIMENSIONES EN READY-TO-SHOW: ${size[0]}x${size[1]}`);
+    }
   });
 
   // Cargar la última posición guardada
   const windowBounds = store.get('windowBounds');
   if (windowBounds) {
     newWindow.setBounds(windowBounds as Electron.Rectangle);
+    
+    // ASEGURAR ANCHO CORRECTO SI SE CARGÓ POSICIÓN GUARDADA Y ESTAMOS EN PRODUCCIÓN
+    if (!isDev) {
+      const bounds = newWindow.getBounds();
+      newWindow.setBounds({...bounds, width: 400});
+    }
   }
 
   // Guardar la posición cuando se mueva la ventana
@@ -227,6 +265,28 @@ export const createHockeyWindow = () => {
   // Eventos de ventana para depuración
   newWindow.webContents.on('did-finish-load', () => {
     console.log('La ventana ha terminado de cargar');
+    
+    // Abrir DevTools solo en modo desarrollo
+    if (isDev) {
+      console.log('Modo desarrollo: abriendo DevTools');
+      // Forzar apertura de DevTools
+      newWindow.webContents.openDevTools({ mode: 'right' });
+      
+      // Asegurar que DevTools se abre en caso de problemas
+      setTimeout(() => {
+        if (!newWindow.webContents.isDevToolsOpened()) {
+          console.log('Intentando abrir DevTools nuevamente...');
+          newWindow.webContents.openDevTools({ mode: 'right' });
+        }
+      }, 500);
+    } else {
+      console.log('Modo producción: no se abrirán DevTools');
+      
+      // FORZAR TAMAÑO UNA VEZ MÁS DESPUÉS DE CARGAR
+      newWindow.setSize(400, 600);
+      const size = newWindow.getSize();
+      console.log(`Dimensiones finales: ${size[0]}x${size[1]}`);
+    }
   });
 
   newWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {

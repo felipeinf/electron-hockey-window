@@ -1,8 +1,9 @@
-import { app, session } from 'electron';
+import { app, session, ipcMain } from 'electron';
 import path from 'path';
 import { createHockeyWindow } from '../window/hockey-window';
 import { initializeApp } from './electron-config';
 import * as log from 'electron-log';
+import { initializeGithubService } from '../../src/app/services/github-service';
 
 // Declaración global para la ventana
 declare global {
@@ -12,6 +13,19 @@ declare global {
     }
   }
 }
+
+// Verificar el modo de ejecución y respetarlo
+console.log(`Valor original de NODE_ENV: "${process.env.NODE_ENV}"`);
+console.log(`Argumentos de ejecución:`, process.argv);
+
+// Solo definir valor por defecto si no existe
+if (!process.env.NODE_ENV) {
+  console.warn('⚠️ NODE_ENV no definido, configurando por defecto a "production"');
+  process.env.NODE_ENV = 'production';
+}
+
+// Ahora mostramos el valor final sin modificarlo
+console.log(`✅ MODO DE EJECUCIÓN FINAL: "${process.env.NODE_ENV}"`);
 
 // Configuración de registro
 log.initialize({ preload: true });
@@ -64,10 +78,19 @@ app.whenReady().then(async () => {
       }
     }
     
-    // Inicializar IPC
-    log.info('Inicializando handlers IPC...');
+    // IMPORTANTE: Inicializar los servicios ANTES de inicializar la app y crear ventanas
+    log.info('Inicializando servicios específicos (TOKEN GITHUB)...');
+    await initializeGithubService();
+    log.info('Servicios específicos inicializados correctamente');
+    log.info('Handlers IPC registrados:', ipcMain.eventNames());
+    
+    // Inicializar IPC básicos
+    log.info('Inicializando handlers IPC básicos...');
     initializeApp();
-    log.info('Handlers IPC inicializados correctamente, incluyendo github:get-token y github:set-token');
+    log.info('Handlers IPC básicos inicializados');
+    
+    // Esperar un momento para que se registren completamente los handlers
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Crear ventana principal
     await createHockeyWindow();
