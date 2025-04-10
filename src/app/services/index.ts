@@ -1,5 +1,4 @@
 import { ipcMain } from 'electron';
-import { initializeGithubService } from './github-service';
 
 export interface ServiceLoader {
   initialize: () => void;
@@ -8,10 +7,6 @@ export interface ServiceLoader {
 
 // Registro de todos los servicios disponibles en la aplicación
 export const services: ServiceLoader[] = [
-  {
-    name: 'github-service',
-    initialize: initializeGithubService
-  }
 ];
 
 /**

@@ -1,10 +1,4 @@
-export interface ElectronAPI {
-  getGithubToken: () => Promise<string>;
-  setGithubToken: (token: string) => Promise<boolean>;
-}
+// Reexportar la interfaz desde window/types
+export * from '../../window/types/electron';
 
-declare global {
-  interface Window {
-    electron: ElectronAPI;
-  }
-} 
+// No es necesario declarar global aquí ya que lo hacemos en el archivo importado

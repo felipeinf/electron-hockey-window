@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PullRequest, Commit } from '../types';
+import { ElectronClient } from '../../../window/electron-client';
 
 interface UseGitHubDataReturn {
   token: string;
@@ -49,7 +50,7 @@ const useGitHubData = (): UseGitHubDataReturn => {
     setTimeout(() => {
       setAppStage('loading');
       
-      const isElectronAvailable = typeof window.electron !== 'undefined';
+      const isElectronAvailable = window.electron !== undefined;
       setApiAvailable(isElectronAvailable);
       
       console.log('¿API de Electron disponible?', isElectronAvailable);
@@ -105,7 +106,7 @@ const useGitHubData = (): UseGitHubDataReturn => {
     try {
       console.log('Intentando cargar token de Github...');
       
-      const savedToken = await window.electron.getGithubToken();
+      const savedToken = await ElectronClient.storage.getValue<string>('githubToken');
       console.log('Token recibido, longitud:', savedToken?.length || 0);
       
       if (savedToken) {
@@ -286,35 +287,34 @@ const useGitHubData = (): UseGitHubDataReturn => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Intentando guardar token:', token ? 'Sí (longitud: ' + token.length + ')' : 'No');
     
     if (!token.trim()) {
-      setStatus('El token no puede estar vacío');
+      setError('Por favor, ingresa un token válido');
       return;
     }
     
+    setStatus('Guardando token...');
+    setLoading(true);
+    setError(null);
+    
     try {
-      if (apiAvailable && typeof window.electron?.setGithubToken === 'function') {
-        setLoading(true);
-        const result = await window.electron.setGithubToken(token);
-        console.log('Resultado al guardar token:', result);
-        
-        if (result) {
-          setShowTokenForm(false);
-          setTokenSaved(true);
-          setStatus('Token guardado correctamente');
-          loadPullRequests(token);
-        } else {
-          setStatus('Error al guardar el token');
-          setLoading(false);
-        }
+      // Guardar el token usando la nueva API genérica
+      const success = await ElectronClient.storage.setValue<string>('githubToken', token);
+      
+      if (success) {
+        setTokenSaved(true);
+        setShowTokenForm(false);
+        setStatus('Token guardado, cargando pull requests...');
+        loadPullRequests(token);
       } else {
-        setStatus('No se puede guardar el token: API no disponible');
+        setError('No se pudo guardar el token');
+        setStatus('Error al guardar token');
         setLoading(false);
       }
     } catch (error) {
-      console.error('Error al guardar el token:', error);
-      setStatus('Error al guardar el token. Por favor intente de nuevo.');
+      console.error('Error al guardar token:', error);
+      setError('Ocurrió un error al guardar el token');
+      setStatus('Error al guardar token');
       setLoading(false);
     }
   };
@@ -325,53 +325,47 @@ const useGitHubData = (): UseGitHubDataReturn => {
   };
   
   const handleDeleteToken = async () => {
+    setStatus('Eliminando token...');
+    setLoading(true);
+    
     try {
-      if (apiAvailable && typeof window.electron?.setGithubToken === 'function') {
-        setLoading(true);
-        const result = await window.electron.setGithubToken('');
-        
-        if (result) {
-          setToken('');
-          setTokenSaved(false);
-          setShowTokenForm(true);
-          setStatus('Token eliminado correctamente');
-          setPullRequests([]);
-        } else {
-          setStatus('Error al eliminar el token');
-        }
-        setLoading(false);
+      // Eliminar el token usando la nueva API genérica
+      const success = await ElectronClient.storage.removeValue('githubToken');
+      
+      if (success) {
+        setToken('');
+        setTokenSaved(false);
+        setShowTokenForm(true);
+        setPullRequests([]);
+        setStatus('Token eliminado correctamente');
+      } else {
+        setError('No se pudo eliminar el token');
+        setStatus('Error al eliminar token');
       }
     } catch (error) {
-      console.error('Error al eliminar el token:', error);
-      setStatus('Error al eliminar el token');
+      console.error('Error al eliminar token:', error);
+      setError('Ocurrió un error al eliminar el token');
+      setStatus('Error al eliminar token');
+    } finally {
       setLoading(false);
     }
   };
   
   const handlePRClick = async (url: string) => {
     try {
-      if (apiAvailable && typeof window.electron?.openExternal === 'function') {
-        await window.electron.openExternal(url);
-      } else {
-        window.open(url, '_blank');
-      }
+      await ElectronClient.system.openExternal(url);
     } catch (error) {
       console.error('Error al abrir URL:', error);
-      setStatus('Error al abrir el enlace');
+      setError('Error al abrir el PR en el navegador');
     }
   };
   
   const handleGenerateTokenClick = async () => {
     try {
-      const tokenUrl = 'https://github.com/settings/tokens/new?scopes=repo&description=Hockey%20PR%20App';
-      if (apiAvailable && typeof window.electron?.openExternal === 'function') {
-        await window.electron.openExternal(tokenUrl);
-      } else {
-        window.open(tokenUrl, '_blank');
-      }
+      await ElectronClient.system.openExternal('https://github.com/settings/tokens/new?scopes=repo&description=PR%20Viewer%20App');
     } catch (error) {
       console.error('Error al abrir URL para generar token:', error);
-      setStatus('Error al abrir el enlace');
+      setError('Error al abrir la página para generar un token');
     }
   };
   

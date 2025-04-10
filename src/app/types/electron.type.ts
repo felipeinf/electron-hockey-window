@@ -1,11 +1,4 @@
-declare global {
-  interface Window {
-    electron: {
-      getGithubToken: () => Promise<string>;
-      setGithubToken: (token: string) => Promise<boolean>;
-      openExternal?: (url: string) => Promise<void>;
-    }
-  }
-}
+// Reexportar los tipos desde internal/types
+export * from '../../../internal/types/electron';
 
-export {} 
+// No es necesario redefinir aquí la interfaz global ya que la estamos importando 

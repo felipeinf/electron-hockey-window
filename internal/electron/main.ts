@@ -3,7 +3,6 @@ import path from 'path';
 import { createHockeyWindow } from '../window/hockey-window';
 import { initializeApp } from './electron-config';
 import * as log from 'electron-log';
-import { initializeGithubService } from '../../src/app/services/github-service';
 
 // Declaración global para la ventana
 declare global {
@@ -78,10 +77,6 @@ app.whenReady().then(async () => {
       }
     }
     
-    // IMPORTANTE: Inicializar los servicios ANTES de inicializar la app y crear ventanas
-    log.info('Inicializando servicios específicos (TOKEN GITHUB)...');
-    await initializeGithubService();
-    log.info('Servicios específicos inicializados correctamente');
     log.info('Handlers IPC registrados:', ipcMain.eventNames());
     
     // Inicializar IPC básicos
