@@ -3,7 +3,7 @@
  */
 
 // Importar el framework Hockey Window
-import { initializeHockeyApp } from '../window/main';
+import { initializeHockeyApp } from '../window';
 
 // Inicializar la aplicación utilizando el framework
 initializeHockeyApp();
