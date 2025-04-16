@@ -8,7 +8,7 @@ console.log('Hockey Window Framework: Preload script iniciado');
  * API de puente entre el proceso de renderizado y el proceso principal.
  * Proporciona funciones para acceder a capacidades nativas de Electron de forma segura.
  */
-const api: ElectronApi = {
+const api: HockeyWindowAPI = {
   /**
    * API de almacenamiento persistente
    */
