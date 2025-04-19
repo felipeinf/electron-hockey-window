@@ -1,21 +1,23 @@
-// Cliente Electron para aplicaciones Hockey Window
-// Verificar que estemos en un entorno Electron
-const isElectronAvailable = (): boolean => {
+// Cliente para aplicaciones Hockey Window
+import { HockeyWindowAPI } from '../internal/types/hockey-window';
+
+// Verificar que estemos en un entorno Hockey Window
+const isHockeyWindowAvailable = (): boolean => {
   // Comprueba si el objeto 'electron' existe en el objeto 'window'
   return typeof window !== 'undefined' && window.electron !== undefined;
 };
 
-// API cliente de Electron bien tipada y con manejo de errores básico
-export const ElectronClient = {
+// API cliente bien tipada y con manejo de errores básico
+export const HockeyWindowClient = {
   // API de almacenamiento persistente
   storage: {
     /**
      * Obtiene un valor del almacenamiento persistente.
-     * Devuelve null si no está disponible Electron o si ocurre un error.
+     * Devuelve null si no está disponible o si ocurre un error.
      */
     getValue: async <T>(key: string): Promise<T | null> => {
-      if (!isElectronAvailable()) {
-        console.warn('Electron no disponible, no se puede obtener el valor:', key);
+      if (!isHockeyWindowAvailable()) {
+        console.warn('Hockey Window no disponible, no se puede obtener el valor:', key);
         return null;
       }
       try {
@@ -33,8 +35,8 @@ export const ElectronClient = {
      * Devuelve true si se guarda correctamente, false en caso contrario.
      */
     setValue: async <T>(key: string, value: T): Promise<boolean> => {
-      if (!isElectronAvailable()) {
-        console.warn('Electron no disponible, no se puede guardar el valor:', key);
+      if (!isHockeyWindowAvailable()) {
+        console.warn('Hockey Window no disponible, no se puede guardar el valor:', key);
         return false;
       }
       try {
@@ -52,8 +54,8 @@ export const ElectronClient = {
      * Devuelve true si se elimina correctamente, false en caso contrario.
      */
     removeValue: async (key: string): Promise<boolean> => {
-      if (!isElectronAvailable()) {
-        console.warn('Electron no disponible, no se puede eliminar el valor:', key);
+      if (!isHockeyWindowAvailable()) {
+        console.warn('Hockey Window no disponible, no se puede eliminar el valor:', key);
         return false;
       }
       try {
@@ -71,11 +73,11 @@ export const ElectronClient = {
   system: {
     /**
      * Abre una URL en el navegador predeterminado del sistema.
-     * No hace nada si Electron no está disponible.
+     * No hace nada si Hockey Window no está disponible.
      */
     openExternal: async (url: string): Promise<void> => {
-      if (!isElectronAvailable()) {
-        console.warn('Electron no disponible, no se puede abrir enlace externo:', url);
+      if (!isHockeyWindowAvailable()) {
+        console.warn('Hockey Window no disponible, no se puede abrir enlace externo:', url);
         return;
       }
       try {
@@ -91,11 +93,11 @@ export const ElectronClient = {
   window: {
     /**
      * Cierra la ventana actual de la aplicación.
-     * No hace nada si Electron no está disponible.
+     * No hace nada si Hockey Window no está disponible.
      */
     close: async (): Promise<void> => {
-      if (!isElectronAvailable()) {
-        console.warn('Electron no disponible, no se puede cerrar la ventana.');
+      if (!isHockeyWindowAvailable()) {
+        console.warn('Hockey Window no disponible, no se puede cerrar la ventana.');
         return;
       }
       try {
@@ -108,11 +110,11 @@ export const ElectronClient = {
 
     /**
      * Minimiza la ventana actual de la aplicación.
-     * No hace nada si Electron no está disponible.
+     * No hace nada si Hockey Window no está disponible.
      */
     minimize: async (): Promise<void> => {
-       if (!isElectronAvailable()) {
-        console.warn('Electron no disponible, no se puede minimizar la ventana.');
+       if (!isHockeyWindowAvailable()) {
+        console.warn('Hockey Window no disponible, no se puede minimizar la ventana.');
         return;
       }
       try {
@@ -125,5 +127,8 @@ export const ElectronClient = {
   },
 };
 
+// Mantener compatibilidad con nombre anterior
+export const ElectronClient = HockeyWindowClient;
+
 // Exporta la función de verificación por si se necesita externamente
-export { isElectronAvailable };
+export { isHockeyWindowAvailable };
