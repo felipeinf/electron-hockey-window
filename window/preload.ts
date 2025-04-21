@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { ElectronApi } from './types/electron';
+import { HockeyWindowAPI } from '../internal/types/hockey-window';
 
 // Para depuración
 console.log('Hockey Window Framework: Preload script iniciado');
