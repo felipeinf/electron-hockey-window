@@ -21,4 +21,7 @@ declare global {
   interface Window {
     electron: ElectronApi;
   }
-} 
+}
+
+// Reexportar los tipos desde internal/types/hockey-window.d.ts
+export * from '../../internal/types/hockey-window'; 
