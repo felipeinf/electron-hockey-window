@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PullRequest, Commit } from '../types';
 import { ElectronClient } from '../../../window/electron-client';
+import { Octokit } from '@octokit/rest';
 
 interface UseGitHubDataReturn {
   token: string;
@@ -29,9 +30,9 @@ interface UseGitHubDataReturn {
 
 const useGitHubData = (): UseGitHubDataReturn => {
   const [token, setToken] = useState<string>('');
-  const [showTokenForm, setShowTokenForm] = useState<boolean>(false);
+  const [showTokenForm, setShowTokenForm] = useState<boolean>(true);
   const [apiAvailable, setApiAvailable] = useState<boolean>(false);
-  const [status, setStatus] = useState<string>('Iniciando aplicación...');
+  const [status, setStatus] = useState<string>('Cargando...');
   const [loading, setLoading] = useState<boolean>(true);
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
   const [tokenSaved, setTokenSaved] = useState<boolean>(false);
@@ -102,7 +103,7 @@ const useGitHubData = (): UseGitHubDataReturn => {
     };
   }, [token, tokenSaved]);
 
-  const loadToken = async () => {
+  const loadToken = useCallback(async () => {
     try {
       console.log('Intentando cargar token de Github...');
       
@@ -133,9 +134,9 @@ const useGitHubData = (): UseGitHubDataReturn => {
       setLoading(false);
       setAppStage('ready');
     }
-  };
+  }, []);
 
-  const loadPullRequests = async (accessToken: string) => {
+  const loadPullRequests = useCallback(async (accessToken: string) => {
     setLoading(true);
     setError(null);
     setStatus('Cargando pull requests...');
@@ -283,9 +284,9 @@ const useGitHubData = (): UseGitHubDataReturn => {
       console.log('Finalizando carga de PRs, estableciendo loading=false');
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     if (!token.trim()) {
@@ -317,14 +318,14 @@ const useGitHubData = (): UseGitHubDataReturn => {
       setStatus('Error al guardar token');
       setLoading(false);
     }
-  };
+  }, [token, loadPullRequests]);
 
   const handleSettingsClick = () => {
     console.log('Alternando configuración...');
     setShowTokenForm(!showTokenForm);
   };
   
-  const handleDeleteToken = async () => {
+  const handleDeleteToken = useCallback(async () => {
     setStatus('Eliminando token...');
     setLoading(true);
     
@@ -349,25 +350,25 @@ const useGitHubData = (): UseGitHubDataReturn => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
   
-  const handlePRClick = async (url: string) => {
+  const handlePRClick = useCallback(async (url: string) => {
     try {
-      await ElectronClient.system.openExternal(url);
-    } catch (error) {
-      console.error('Error al abrir URL:', error);
-      setError('Error al abrir el PR en el navegador');
+      await window.electron.openExternal(url);
+    } catch (err) {
+      console.error('Error abriendo PR:', err);
+      setError('Error abriendo PR');
     }
-  };
+  }, []);
   
-  const handleGenerateTokenClick = async () => {
+  const handleGenerateTokenClick = useCallback(async () => {
     try {
-      await ElectronClient.system.openExternal('https://github.com/settings/tokens/new?scopes=repo&description=PR%20Viewer%20App');
-    } catch (error) {
-      console.error('Error al abrir URL para generar token:', error);
-      setError('Error al abrir la página para generar un token');
+      await window.electron.openExternal('https://github.com/settings/tokens');
+    } catch (err) {
+      console.error('Error abriendo página de tokens:', err);
+      setError('Error abriendo página de tokens');
     }
-  };
+  }, []);
   
   // Función para mostrar formulario de token
   const mostrarFormulario = () => {
