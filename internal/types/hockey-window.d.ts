@@ -1,27 +1,27 @@
 /**
- * Interfaces y tipos para la API de Electron
+ * Interfaces y tipos para la API de Hockey Window
  */
 
-// Declaración de la API de Electron que se expone al renderer
-export interface ElectronApi {
+// API principal expuesta al renderer
+export interface HockeyWindowAPI {
+  // API de almacenamiento
   getValue: <T>(key: string) => Promise<T | null>;
   setValue: <T>(key: string, value: T) => Promise<boolean>;
   removeValue: (key: string) => Promise<boolean>;
+  
+  // API del sistema
   openExternal: (url: string) => Promise<boolean>;
+  
+  // API de la ventana
   closeWindow: () => Promise<boolean>;
   minimizeWindow: () => Promise<boolean>;
   maximizeWindow: () => Promise<boolean>;
   restoreWindow: () => Promise<boolean>;
-  getGithubToken: () => Promise<string>;
-  setGithubToken: (token: string) => Promise<boolean>;
 }
 
 // Declaración global para que TypeScript reconozca window.electron
 declare global {
   interface Window {
-    electron: ElectronApi;
+    electron: HockeyWindowAPI;
   }
-}
-
-// Reexportar los tipos desde internal/types/hockey-window.d.ts
-export * from '../../internal/types/hockey-window'; 
+} 

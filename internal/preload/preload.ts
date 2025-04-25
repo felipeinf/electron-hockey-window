@@ -14,11 +14,21 @@ const api = {
     console.log('Solicitando minimizar ventana');
     return await ipcRenderer.invoke('window:minimize');
   },
+  maximizeWindow: async () => {
+    console.log('Solicitando maximizar ventana');
+    return await ipcRenderer.invoke('window:maximize');
+  },
+  restoreWindow: async () => {
+    console.log('Solicitando restaurar ventana');
+    return await ipcRenderer.invoke('window:restore');
+  },
+  
   // Funcionalidad general que cualquier aplicación podría necesitar
   openExternal: async (url: string) => {
     console.log('Abriendo URL externa:', url);
     return await ipcRenderer.invoke('system:open-external', url);
   },
+  
   // Almacenamiento persistente genérico
   getValue: async (key: string) => {
     console.log(`Obteniendo valor para clave: ${key}`);
@@ -28,14 +38,9 @@ const api = {
     console.log(`Guardando valor para clave: ${key}`);
     return await ipcRenderer.invoke('storage:set', key, value);
   },
-  // APIs específicas de GitHub - añadidas directamente para evitar problemas
-  getGithubToken: async () => {
-    console.log('Solicitando token de GitHub desde preload');
-    return await ipcRenderer.invoke('github:get-token');
-  },
-  setGithubToken: async (token: string) => {
-    console.log('Guardando token de GitHub desde preload:', token ? 'Valor no vacío' : 'Valor vacío');
-    return await ipcRenderer.invoke('github:set-token', token);
+  removeValue: async (key: string) => {
+    console.log(`Eliminando valor para clave: ${key}`);
+    return await ipcRenderer.invoke('storage:remove', key);
   }
 };
 
