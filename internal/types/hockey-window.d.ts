@@ -17,10 +17,6 @@ export interface HockeyWindowAPI {
   minimizeWindow: () => Promise<boolean>;
   maximizeWindow: () => Promise<boolean>;
   restoreWindow: () => Promise<boolean>;
-  
-  // APIs específicas (compatibilidad)
-  getGithubToken: () => Promise<string>;
-  setGithubToken: (token: string) => Promise<boolean>;
 }
 
 // Declaración global para que TypeScript reconozca window.electron
