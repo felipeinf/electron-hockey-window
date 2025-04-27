@@ -3,22 +3,13 @@ import * as path from 'path';
 import ElectronStore from 'electron-store';
 import * as fs from 'fs';
 
-// Configuración de electron-store genérica
+// Instancia de almacenamiento para Hockey Window
 export const store = new ElectronStore({
-  name: 'hockey-config',
-  clearInvalidConfig: true,
-  defaults: {
-    windowBounds: {
-      width: 400,
-      height: 600,
-      x: 0,
-      y: 0
-    }
-  }
+  name: 'hockey-window',
+  clearInvalidConfig: true
 });
 
 // Control de ventanas
-// Variable global para la ventana principal
 export let hockeyWindow: BrowserWindow | null = null;
 
 // Handlers para control de ventana
