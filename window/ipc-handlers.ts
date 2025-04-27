@@ -1,11 +1,5 @@
 import { BrowserWindow, ipcMain, shell } from 'electron';
-import ElectronStore from 'electron-store';
-
-// Instancia de almacenamiento general para el framework
-export const store = new ElectronStore({ 
-  name: 'hockey-window-store',
-  clearInvalidConfig: true
-});
+import { store } from '../internal/electron/electron-config';
 
 // Función para obtener la ventana actual
 let getHockeyWindow: () => BrowserWindow | null = () => null;
@@ -214,11 +208,17 @@ function registerGitHubHandlers() {
       
       if (token === null || token === '') {
         // Si es null o vacío, eliminar el token
+        console.log("Eliminando token de GitHub");
         store.delete('githubToken');
       } else {
         // Guardar el nuevo token
+        console.log("Guardando nuevo token de GitHub");
         store.set('githubToken', token);
       }
+      
+      // Verificar que se guardó correctamente
+      const savedToken = store.get('githubToken');
+      console.log("Token guardado:", savedToken ? "***" : "null");
       
       return true;
     } catch (error) {

@@ -1,9 +1,9 @@
 import { app, globalShortcut } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { finalConfig } from './config';
+import { windowConfig } from './config';
 import { registerIPCHandlers } from './ipc-handlers';
-import { createHockeyWindow, closeAllDuplicateWindows, hideHockeyWindow, getHockeyWindow } from './hockey-window';
+import { createHockeyWindow, closeAllDuplicateWindows, hideHockeyWindow, getHockeyWindow } from '../internal/window/hockey-window';
 
 /**
  * Framework Hockey Window - Punto de entrada principal
@@ -12,7 +12,7 @@ import { createHockeyWindow, closeAllDuplicateWindows, hideHockeyWindow, getHock
 
 // Función para registrar el atajo global
 function registerGlobalShortcut() {
-  const shortcutKey = finalConfig.shortcutKey || 'CommandOrControl+Shift+H';
+  const shortcutKey = windowConfig.shortcutKey;
   
   try {
     globalShortcut.register(shortcutKey, () => {
@@ -159,4 +159,4 @@ export function initializeHockeyApp() {
 }
 
 // Exportar funciones y constantes para que las aplicaciones puedan usarlas
-export { getHockeyWindow, createHockeyWindow, hideHockeyWindow, finalConfig };
+export { getHockeyWindow, createHockeyWindow, hideHockeyWindow, windowConfig };

@@ -1,9 +1,20 @@
 // Hockey Window Configuration
-import { HockeyWindowConfig } from './types/window-config';
+import { HockeyWindowConfig } from '../internal/types/hockey-window';
+import * as path from 'path';
 
-// Configuración predeterminada
-export const defaultConfig: HockeyWindowConfig = {
-  title: "Hockey Window",
+// Configuración base (no personalizable)
+const baseConfig = {
+  nodeIntegration: false,
+  contextIsolation: true,
+  sandbox: false,
+  preload: path.join(__dirname, 'preload.js')
+};
+
+// Configuración de la ventana
+// Modifica solo los valores que necesites cambiar
+export const windowConfig: HockeyWindowConfig = {
+  ...baseConfig,
+  title: "Hockey PR",
   width: 400,
   height: 600,
   transparent: true,
@@ -17,25 +28,5 @@ export const defaultConfig: HockeyWindowConfig = {
   devTools: false
 };
 
-// Configuración específica de la aplicación
-// Esta es la que el usuario debe modificar para personalizar su aplicación
-export const appConfig: HockeyWindowConfig = {
-  title: "Hockey PR",
-  width: 400,
-  height: 600,
-  transparent: true,
-  alwaysOnTop: true,
-  showSystemButtons: false,
-  backgroundColor: "#121212"
-};
-
-// Configuración final que combina los valores predeterminados con los específicos de la aplicación
-export const finalConfig: HockeyWindowConfig = getConfig(appConfig);
-
-// Función para combinar configuración personalizada con la predeterminada
-export function getConfig(userConfig?: Partial<HockeyWindowConfig>): HockeyWindowConfig {
-  return { ...defaultConfig, ...userConfig };
-}
-
-// Exportar la configuración final como valor predeterminado para facilitar su importación
-export default finalConfig;
+// Exportar la configuración como valor predeterminado
+export default windowConfig;
