@@ -36,7 +36,7 @@ export interface HockeyWindowConfig extends HockeyWindowBaseConfig {
   height?: number; // Alto de la ventana
   transparent?: boolean; // Si la ventana debe ser transparente
   alwaysOnTop?: boolean; // Si la ventana debe estar siempre en primer plano
-  shortcutKey?: string; // Atajo de teclado (por defecto CommandOrControl+Shift+H)
+  shortcutKey: string; // Atajo de teclado (por defecto CommandOrControl+Shift+H)
   showSystemButtons?: boolean; // Mostrar botones del sistema operativo
   backgroundColor?: string; // Color de fondo (útil con transparent: false)
   roundedCorners?: boolean; // Si la ventana debe tener esquinas redondeadas
