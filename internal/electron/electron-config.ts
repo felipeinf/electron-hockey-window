@@ -2,80 +2,59 @@ import { BrowserWindow, app, globalShortcut, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import ElectronStore from 'electron-store';
 import * as fs from 'fs';
+import * as os from 'os';
 
 // Instancia de almacenamiento para Hockey Window
+console.log('Inicializando ElectronStore...');
+
+// Definir el directorio de configuración explícitamente para evitar problemas de permisos
+const appConfigDir = path.join(os.homedir(), '.config', 'hockey-window');
+console.log('Directorio de configuración:', appConfigDir);
+
+// Verificar que el directorio existe y tiene permisos de escritura
+try {
+  if (!fs.existsSync(appConfigDir)) {
+    fs.mkdirSync(appConfigDir, { recursive: true });
+    console.log('Directorio de configuración creado:', appConfigDir);
+  }
+  
+  // Verificar permisos de escritura
+  const testFile = path.join(appConfigDir, 'test-write.tmp');
+  fs.writeFileSync(testFile, 'test', { encoding: 'utf8' });
+  fs.unlinkSync(testFile);
+  console.log('Verificación de permisos de escritura exitosa');
+} catch (error) {
+  console.error('Error al verificar/crear directorio de configuración:', error);
+}
+
 export const store = new ElectronStore({
   name: 'hockey-window',
-  clearInvalidConfig: true
+  clearInvalidConfig: true,
+  cwd: appConfigDir, // Establecer el directorio de trabajo explícitamente
+  defaults: {
+    windowBounds: null,
+    githubToken: null
+  }
+});
+
+// Log para verificar la ubicación del store
+console.log('Ubicación del archivo de configuración:', store.path);
+console.log('Valores iniciales en el store:', {
+  windowBounds: store.get('windowBounds') ? '***' : 'null',
+  githubToken: store.get('githubToken') ? '***' : 'null'
 });
 
 // Control de ventanas
 export let hockeyWindow: BrowserWindow | null = null;
 
 // Handlers para control de ventana
-ipcMain.handle('window:close', () => {
-  try {
-    const win = hockeyWindow || BrowserWindow.getFocusedWindow();
-    if (win && !win.isDestroyed()) {
-      console.log('Cerrando ventana');
-      win.close();
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error al cerrar ventana:', error);
-    return false;
-  }
-});
-
-ipcMain.handle('window:minimize', () => {
-  try {
-    const win = hockeyWindow || BrowserWindow.getFocusedWindow();
-    if (win && !win.isDestroyed()) {
-      console.log('Minimizando ventana');
-      win.minimize();
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error al minimizar ventana:', error);
-    return false;
-  }
-});
+// Eliminados porque están siendo manejados por window/ipc-handlers.ts
 
 // Handler para abrir URLs externas
-ipcMain.handle('system:open-external', async (_, url) => {
-  try {
-    console.log('Abriendo URL externa:', url);
-    await shell.openExternal(url);
-    return true;
-  } catch (error) {
-    console.error('Error al abrir URL externa:', error);
-    return false;
-  }
-});
+// Eliminado porque está siendo manejado por window/ipc-handlers.ts
 
 // Handlers genéricos para almacenamiento
-ipcMain.handle('storage:get', (_, key) => {
-  try {
-    console.log(`Obteniendo valor para clave: ${key}`);
-    return store.get(key);
-  } catch (error) {
-    console.error(`Error al obtener valor para clave ${key}:`, error);
-    return null;
-  }
-});
-
-ipcMain.handle('storage:set', (_, key, value) => {
-  try {
-    console.log(`Guardando valor para clave: ${key}`);
-    store.set(key, value);
-    return true;
-  } catch (error) {
-    console.error(`Error al guardar valor para clave ${key}:`, error);
-    return false;
-  }
-});
+// Eliminados porque están siendo manejados por window/ipc-handlers.ts
 
 // Función para inicializar la aplicación Electron
 export function initializeApp() {
