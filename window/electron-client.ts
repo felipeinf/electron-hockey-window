@@ -15,7 +15,7 @@ export const HockeyWindowClient = {
      * Obtiene un valor del almacenamiento persistente.
      * Devuelve null si no está disponible o si ocurre un error.
      */
-    getValue: async <T>(key: string): Promise<T | null> => {
+    getValue: async <T>(key: 'windowBounds' | 'githubToken'): Promise<T | null> => {
       if (!isHockeyWindowAvailable()) {
         console.warn('Hockey Window no disponible, no se puede obtener el valor:', key);
         return null;
@@ -34,7 +34,7 @@ export const HockeyWindowClient = {
      * Guarda un valor en el almacenamiento persistente.
      * Devuelve true si se guarda correctamente, false en caso contrario.
      */
-    setValue: async <T>(key: string, value: T): Promise<boolean> => {
+    setValue: async <T>(key: 'windowBounds' | 'githubToken', value: T): Promise<boolean> => {
       if (!isHockeyWindowAvailable()) {
         console.warn('Hockey Window no disponible, no se puede guardar el valor:', key);
         return false;
@@ -53,7 +53,7 @@ export const HockeyWindowClient = {
      * Elimina un valor del almacenamiento persistente.
      * Devuelve true si se elimina correctamente, false en caso contrario.
      */
-    removeValue: async (key: string): Promise<boolean> => {
+    removeValue: async (key: 'windowBounds' | 'githubToken'): Promise<boolean> => {
       if (!isHockeyWindowAvailable()) {
         console.warn('Hockey Window no disponible, no se puede eliminar el valor:', key);
         return false;
