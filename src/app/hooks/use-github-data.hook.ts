@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PullRequest, Commit } from '../types';
-import { ElectronClient } from '../../../window/electron-client';
+import GitHubTokenService from '../services/token-service';
 import { Octokit } from '@octokit/rest';
 
 interface UseGitHubDataReturn {
@@ -28,6 +28,9 @@ interface UseGitHubDataReturn {
   loadPullRequests: (accessToken: string) => Promise<void>;
 }
 
+// Variable global para verificar si la API de Electron está disponible
+const isElectronApiAvailable = typeof window !== 'undefined' && !!window.electron;
+
 const useGitHubData = (): UseGitHubDataReturn => {
   const [token, setToken] = useState<string>('');
   const [showTokenForm, setShowTokenForm] = useState<boolean>(true);
@@ -51,19 +54,15 @@ const useGitHubData = (): UseGitHubDataReturn => {
     setTimeout(() => {
       setAppStage('loading');
       
-      const isElectronAvailable = window.electron !== undefined;
+      const isElectronAvailable = typeof window !== 'undefined' && !!window.electron;
       setApiAvailable(isElectronAvailable);
       
       console.log('¿API de Electron disponible?', isElectronAvailable);
+      console.log('Iniciando carga de datos, incluso sin Electron');
       
-      if (isElectronAvailable) {
-        setStatus('Cargando token...');
-        loadToken();
-      } else {
-        setStatus('API de Electron no disponible.');
-        setLoading(false);
-        setAppStage('ready');
-      }
+      // Siempre intentamos cargar el token, incluso sin Electron
+      setStatus('Cargando token...');
+      loadToken();
       
       // Agregar script al documento para manejar el botón de configuración
       const script = document.createElement('script');
@@ -107,8 +106,9 @@ const useGitHubData = (): UseGitHubDataReturn => {
     try {
       console.log('Intentando cargar token de Github...');
       
-      const savedToken = await ElectronClient.storage.getValue<string>('githubToken');
-      console.log('Token recibido, longitud:', savedToken?.length || 0);
+      // Primero intentar desde localStorage usando el servicio
+      let savedToken = await GitHubTokenService.getToken();
+      console.log('Token desde localStorage:', savedToken ? '***' : 'null');
       
       if (savedToken) {
         setToken(savedToken);
@@ -299,8 +299,8 @@ const useGitHubData = (): UseGitHubDataReturn => {
     setError(null);
     
     try {
-      // Guardar el token usando la nueva API genérica
-      const success = await ElectronClient.storage.setValue<string>('githubToken', token);
+      // Guardar el token usando el servicio que usa localStorage
+      const success = await GitHubTokenService.saveToken(token);
       
       if (success) {
         setTokenSaved(true);
@@ -330,8 +330,8 @@ const useGitHubData = (): UseGitHubDataReturn => {
     setLoading(true);
     
     try {
-      // Eliminar el token usando la nueva API genérica
-      const success = await ElectronClient.storage.removeValue('githubToken');
+      // Eliminar el token usando el servicio que usa localStorage
+      const success = await GitHubTokenService.removeToken();
       
       if (success) {
         setToken('');

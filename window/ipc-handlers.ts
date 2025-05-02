@@ -1,11 +1,5 @@
 import { BrowserWindow, ipcMain, shell } from 'electron';
-import ElectronStore from 'electron-store';
-
-// Instancia de almacenamiento general para el framework
-export const store = new ElectronStore({ 
-  name: 'hockey-window-store',
-  clearInvalidConfig: true
-});
+import { store } from '../internal/electron/electron-config';
 
 // Función para obtener la ventana actual
 let getHockeyWindow: () => BrowserWindow | null = () => null;
@@ -150,40 +144,67 @@ function registerSystemHandlers() {
 
 // Registrar handlers para almacenamiento
 function registerStorageHandlers() {
+  console.log("Registrando handlers IPC para almacenamiento...");
+
   // Handler para obtener valor
-  ipcMain.handle('storage:get', (_, key) => {
+  ipcMain.handle('storage:get', async (_, key: 'windowBounds' | 'githubToken') => {
     try {
-      console.log(`Obteniendo valor para clave: ${key}`);
-      return store.get(key);
+      console.log(`Handler: Obteniendo valor para clave: ${key}`);
+      const value = store.get(key);
+      console.log(`Handler: Valor obtenido para clave ${key}:`, value ? "***" : "null/undefined");
+      return value;
     } catch (error) {
-      console.error(`Error al obtener valor para clave ${key}:`, error);
+      console.error(`Handler: Error al obtener valor para clave "${key}":`, error);
       return null;
     }
   });
 
   // Handler para guardar valor
-  ipcMain.handle('storage:set', (_, key, value) => {
+  ipcMain.handle('storage:set', async (_, key: 'windowBounds' | 'githubToken', value: any) => {
     try {
-      console.log(`Guardando valor para clave: ${key}`);
-      store.set(key, value);
+      console.log(`Handler: Guardando valor para clave: ${key}`);
+      
+      if (value === undefined) {
+        console.error(`Handler: Error: Se intentó guardar un valor undefined para la clave ${key}`);
+        return false;
+      }
+      
+      if (value === null) {
+        // Si es null, eliminar el valor
+        console.log(`Handler: Eliminando valor para clave: ${key}`);
+        store.delete(key);
+      } else {
+        // Guardar el nuevo valor
+        console.log(`Handler: Guardando nuevo valor para clave: ${key}`, typeof value);
+        store.set(key, value);
+      }
+      
+      // Verificar que se guardó correctamente
+      const savedValue = store.get(key);
+      console.log(`Handler: Valor guardado para clave ${key}:`, savedValue ? "***" : "null/undefined", typeof savedValue);
+      
       return true;
     } catch (error) {
-      console.error(`Error al guardar valor para clave ${key}:`, error);
+      console.error(`Handler: Error al guardar valor para clave "${key}":`, error);
       return false;
     }
   });
-  
+
   // Handler para eliminar valor
-  ipcMain.handle('storage:remove', (_, key) => {
+  ipcMain.handle('storage:remove', async (_, key: 'windowBounds' | 'githubToken') => {
     try {
-      console.log(`Eliminando valor para clave: ${key}`);
+      console.log(`Handler: Eliminando valor para clave: ${key}`);
       store.delete(key);
+      const valueAfterDelete = store.get(key);
+      console.log(`Handler: Valor después de eliminar para clave ${key}:`, valueAfterDelete ? "***" : "null/undefined");
       return true;
     } catch (error) {
-      console.error(`Error al eliminar valor para clave ${key}:`, error);
+      console.error(`Handler: Error al eliminar valor para clave "${key}":`, error);
       return false;
     }
   });
+
+  console.log("✅ Handlers de almacenamiento registrados exitosamente.");
 }
 
 // Registrar handlers para compatibilidad con GitHub
@@ -191,13 +212,62 @@ function registerStorageHandlers() {
 function registerGitHubHandlers() {
   console.log("Registrando handlers IPC para compatibilidad con GitHub...");
 
+  // Importar fs y path para manipulación directa de archivos
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+  
+  // Crear un archivo de configuración simple para el token
+  const tokenFilePath = path.join(os.homedir(), '.github-token.json');
+  console.log("Ruta de archivo de token:", tokenFilePath);
+  
+  // Función para leer el token directamente del archivo
+  const readTokenFromFile = () => {
+    try {
+      if (fs.existsSync(tokenFilePath)) {
+        const data = fs.readFileSync(tokenFilePath, 'utf8');
+        const json = JSON.parse(data);
+        return json.token || '';
+      }
+    } catch (error) {
+      console.error("Error al leer token del archivo:", error);
+    }
+    return '';
+  };
+  
+  // Función para guardar el token directamente en el archivo
+  const saveTokenToFile = (token: string | null) => {
+    try {
+      const json = { token: token };
+      fs.writeFileSync(tokenFilePath, JSON.stringify(json, null, 2), 'utf8');
+      return true;
+    } catch (error) {
+      console.error("Error al guardar token en archivo:", error);
+      return false;
+    }
+  };
+
   // Handler para obtener token
   ipcMain.handle('github:get-token', async () => {
     try {
-      console.log("Obteniendo token de GitHub (compatibilidad)");
-      return store.get('githubToken') || '';
+      console.log("Handler GitHub: Obteniendo token de GitHub");
+      
+      // Intentar primero desde el store
+      let token = store.get('githubToken');
+      
+      // Si no está en el store, intentar leerlo del archivo
+      if (!token) {
+        token = readTokenFromFile();
+        // Si se encontró en el archivo, guardarlo también en el store
+        if (token) {
+          store.set('githubToken', token);
+        }
+      }
+      
+      console.log("Handler GitHub: Token recuperado:", token ? "***" : "null/undefined");
+      return token || '';
     } catch (error) {
-      console.error('Error al obtener token de GitHub:', error);
+      console.error('Handler GitHub: Error al obtener token de GitHub:', error);
       return '';
     }
   });
@@ -205,24 +275,47 @@ function registerGitHubHandlers() {
   // Handler para guardar token
   ipcMain.handle('github:set-token', async (_, token: string | null) => {
     try {
-      console.log("Guardando token de GitHub (compatibilidad)");
+      console.log("Handler GitHub: Guardando token de GitHub");
       
       if (token === undefined) {
-        console.error("Error: Se intentó guardar un token undefined");
+        console.error("Handler GitHub: Error: Se intentó guardar un token undefined");
         return false;
       }
       
+      // Guardar tanto en el store como en el archivo
       if (token === null || token === '') {
         // Si es null o vacío, eliminar el token
+        console.log("Handler GitHub: Eliminando token de GitHub");
         store.delete('githubToken');
+        
+        // También eliminar del archivo
+        if (fs.existsSync(tokenFilePath)) {
+          fs.unlinkSync(tokenFilePath);
+        }
+        
+        return true;
       } else {
-        // Guardar el nuevo token
+        // Guardar en ambos lugares
+        console.log("Handler GitHub: Guardando nuevo token de GitHub");
+        
+        // Guardar en el store
         store.set('githubToken', token);
+        
+        // Guardar en el archivo
+        const success = saveTokenToFile(token);
+        
+        if (success) {
+          console.log("Handler GitHub: Token guardado correctamente");
+        } else {
+          console.error("Handler GitHub: Error al guardar token en archivo");
+        }
+        
+        return success;
       }
-      
-      return true;
     } catch (error) {
-      console.error('Error al guardar token de GitHub:', error);
+      console.error('Handler GitHub: Error al guardar token de GitHub:', error);
+      console.error('Handler GitHub: Detalles del error:', error instanceof Error ? error.message : 'Error desconocido');
+      console.error('Handler GitHub: Stack trace:', error instanceof Error ? error.stack : 'No disponible');
       return false;
     }
   });

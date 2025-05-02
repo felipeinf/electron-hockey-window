@@ -31,16 +31,58 @@ const api = {
   
   // Almacenamiento persistente genérico
   getValue: async (key: string) => {
-    console.log(`Obteniendo valor para clave: ${key}`);
-    return await ipcRenderer.invoke('storage:get', key);
+    console.log(`Preload: Obteniendo valor para clave: ${key}`);
+    try {
+      // Si la clave es githubToken, usar el handler específico
+      if (key === 'githubToken') {
+        const result = await ipcRenderer.invoke('github:get-token');
+        console.log(`Preload: Token de GitHub obtenido:`, result ? "***" : "null/undefined");
+        return result;
+      }
+      
+      const result = await ipcRenderer.invoke('storage:get', key);
+      console.log(`Preload: Valor obtenido para clave ${key}:`, result ? "***" : "null/undefined");
+      return result;
+    } catch (error) {
+      console.error(`Preload: Error obteniendo valor para clave ${key}:`, error);
+      return null;
+    }
   },
   setValue: async (key: string, value: any) => {
-    console.log(`Guardando valor para clave: ${key}`);
-    return await ipcRenderer.invoke('storage:set', key, value);
+    console.log(`Preload: Guardando valor para clave: ${key}`, value ? "***" : "null/undefined");
+    try {
+      // Si la clave es githubToken, usar el handler específico
+      if (key === 'githubToken') {
+        const result = await ipcRenderer.invoke('github:set-token', value);
+        console.log(`Preload: Resultado de guardar token de GitHub:`, result);
+        return result;
+      }
+      
+      const result = await ipcRenderer.invoke('storage:set', key, value);
+      console.log(`Preload: Resultado de guardar valor para clave ${key}:`, result);
+      return result;
+    } catch (error) {
+      console.error(`Preload: Error guardando valor para clave ${key}:`, error);
+      return false;
+    }
   },
   removeValue: async (key: string) => {
-    console.log(`Eliminando valor para clave: ${key}`);
-    return await ipcRenderer.invoke('storage:remove', key);
+    console.log(`Preload: Eliminando valor para clave: ${key}`);
+    try {
+      // Si la clave es githubToken, usar el handler específico
+      if (key === 'githubToken') {
+        const result = await ipcRenderer.invoke('github:set-token', null);
+        console.log(`Preload: Resultado de eliminar token de GitHub:`, result);
+        return result;
+      }
+      
+      const result = await ipcRenderer.invoke('storage:remove', key);
+      console.log(`Preload: Resultado de eliminar valor para clave ${key}:`, result);
+      return result;
+    } catch (error) {
+      console.error(`Preload: Error eliminando valor para clave ${key}:`, error);
+      return false;
+    }
   }
 };
 
